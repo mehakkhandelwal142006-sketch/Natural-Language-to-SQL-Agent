@@ -107,21 +107,21 @@ with st.sidebar:
 
     st.markdown("---")
 
-    st.info(
-        """
-        💡 Example Questions
+    #st.info(
+       # """
+        #💡 Example Questions
 
-        • Show all employees
+       # • Show all employees
 
-        • Show employees from HR
+       # • Show employees from HR
 
-        • Count employees
+       # • Count employees
 
-        • Show average salary
+       # • Show average salary
 
-        • Show employees earning more than 60000
-        """
-    )
+       # • Show employees earning more than 60000
+       # """
+    #)
 
 # ===========================================================
 # Welcome Section
@@ -274,7 +274,7 @@ if user_question:
             language="sql"
         )
 
-        st.info("💡 Select the SQL above and copy it (Ctrl+C / Cmd+C).")
+        #st.info("💡 Select the SQL above and copy it (Ctrl+C / Cmd+C).")
 
         # ----------------------------
         # Query Results
