@@ -121,19 +121,6 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # Display Active Schema
-    with st.expander("📋 View Active Database Schema"):
-        try:
-            current_schema = get_database_schema(db_path=st.session_state.active_db)
-            if current_schema.strip():
-                st.code(current_schema, language="yaml")
-            else:
-                st.write("No tables found.")
-        except Exception as e:
-            st.write(f"Unable to read schema: {e}")
-
-    st.markdown("---")
-
     if api_key:
         st.success("✅ API Key Loaded")
     else:
