@@ -2,6 +2,7 @@
 ===========================================================
 AI SQL Chatbot
 Natural Language to SQL Query Generator
+Supports Default DB & User Custom File Uploads (CSV, Excel, SQLite)
 ===========================================================
 """
 
@@ -26,7 +27,9 @@ from ai_agent import (
 )
 
 from database import (
-    execute_query
+    execute_query,
+    get_database_schema,
+    load_custom_file_to_sqlite
 )
 
 # ===========================================================
@@ -40,20 +43,24 @@ st.set_page_config(
 )
 
 # ===========================================================
-# Session State
+# Session State Initialization
 # ===========================================================
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+if "active_db" not in st.session_state:
+    st.session_state.active_db = None  # None = use default company.db
+
+if "uploaded_file_name" not in st.session_state:
+    st.session_state.uploaded_file_name = None
 
 # ===========================================================
 # Header
 # ===========================================================
 
 st.title(APP_NAME)
-
 st.caption(APP_DESCRIPTION)
-
 st.markdown("---")
 
 # ===========================================================
@@ -84,51 +91,72 @@ with st.sidebar:
 
     st.markdown("---")
 
-    st.markdown("### 🗄️ Database")
+    st.markdown("### 📂 Upload Custom Dataset")
+    st.caption("Upload a CSV, Excel (.xlsx), or SQLite (.db) file to query your own data!")
 
-    database_type = st.selectbox(
-        "Database Type",
-        [
-            "SQLite",
-            "MySQL (Coming Soon)"
-        ],
-        index=0
+    uploaded_file = st.file_uploader(
+        "Choose a file",
+        type=["csv", "xlsx", "xls", "db", "sqlite", "sqlite3"],
+        help="Upload CSV, Excel or SQLite DB files"
     )
+
+    if uploaded_file is not None:
+        # Check if new file is uploaded
+        if st.session_state.uploaded_file_name != uploaded_file.name:
+            try:
+                target_db = "data/uploaded.db"
+                msg = load_custom_file_to_sqlite(uploaded_file, target_db=target_db)
+                st.session_state.active_db = target_db
+                st.session_state.uploaded_file_name = uploaded_file.name
+                st.success(f"✅ {msg}")
+            except Exception as e:
+                st.error(f"Failed to process file: {e}")
+
+    if st.session_state.active_db:
+        st.info(f"📊 Currently querying: **{st.session_state.uploaded_file_name}**")
+        if st.button("🔄 Reset to Default Database"):
+            st.session_state.active_db = None
+            st.session_state.uploaded_file_name = None
+            st.rerun()
+
+    st.markdown("---")
+
+    # Display Active Schema
+    with st.expander("📋 View Active Database Schema"):
+        try:
+            current_schema = get_database_schema(db_path=st.session_state.active_db)
+            if current_schema.strip():
+                st.code(current_schema, language="yaml")
+            else:
+                st.write("No tables found.")
+        except Exception as e:
+            st.write(f"Unable to read schema: {e}")
 
     st.markdown("---")
 
     if api_key:
-
         st.success("✅ API Key Loaded")
-
     else:
-
         st.warning("⚠️ Please enter your Gemini API Key")
 
     st.markdown("---")
 
-    #st.info(
-       # """
-        #💡 Example Questions
+    st.info(
+        """
+        💡 Example Questions
 
-       # • Show all employees
-
-       # • Show employees from HR
-
-       # • Count employees
-
-       # • Show average salary
-
-       # • Show employees earning more than 60000
-       # """
-    #)
+        • Show all records
+        • Count total rows
+        • Group by category and show average
+        • Filter records where amount > 500
+        """
+    )
 
 # ===========================================================
 # Welcome Section
 # ===========================================================
 
 if len(st.session_state.messages) == 0:
-
     st.info(WELCOME_MESSAGE)
 
 # ===========================================================
@@ -136,24 +164,17 @@ if len(st.session_state.messages) == 0:
 # ===========================================================
 
 for message in st.session_state.messages:
-
     with st.chat_message(message["role"]):
-
         if message["role"] == "user":
-
             st.write(message["content"])
-
         else:
-
             st.markdown("### 📝 Generated SQL")
-
             st.code(
                 message["sql"],
                 language="sql"
             )
 
             st.markdown("### 📊 Query Results")
-
             st.dataframe(
                 message["result"],
                 use_container_width=True
@@ -163,7 +184,6 @@ for message in st.session_state.messages:
                 "💡 SQL Explanation",
                 expanded=True
             ):
-
                 st.write(message["explanation"])
 
 # ===========================================================
@@ -178,20 +198,12 @@ user_question = st.chat_input(CHAT_PLACEHOLDER)
 
 if user_question:
 
-    # -------------------------------------------------------
     # Check API Key
-    # -------------------------------------------------------
-
     if not api_key:
-
         st.error("⚠️ Please enter your Gemini API Key from the sidebar.")
-
         st.stop()
 
-    # -------------------------------------------------------
-    # Display User Message
-    # -------------------------------------------------------
-
+    # Save and display User Message
     st.session_state.messages.append(
         {
             "role": "user",
@@ -200,114 +212,71 @@ if user_question:
     )
 
     with st.chat_message("user"):
-
         st.write(user_question)
 
-    # -------------------------------------------------------
+    # Active DB Path (None = default company.db)
+    active_db = st.session_state.active_db
+
     # Generate SQL
-    # -------------------------------------------------------
-
     with st.spinner("🤖 Generating SQL Query..."):
-
         try:
-
             generated_sql = generate_sql(
                 question=user_question,
                 model_name=selected_model,
-                api_key=api_key
+                api_key=api_key,
+                db_path=active_db
             )
-
         except Exception as e:
-
             st.error(f"Error while generating SQL:\n\n{e}")
-
             st.stop()
 
-    # -------------------------------------------------------
     # Execute SQL
-    # -------------------------------------------------------
-
     with st.spinner("📊 Executing SQL Query..."):
-
         try:
-
-            query_result = execute_query(generated_sql)
-
+            query_result = execute_query(generated_sql, db_path=active_db)
+            database_error = None
         except Exception as e:
-
             query_result = None
-
             database_error = str(e)
 
-    # -------------------------------------------------------
     # Explain SQL
-    # -------------------------------------------------------
-
     with st.spinner("🧠 Explaining SQL Query..."):
-
         try:
-
             sql_explanation = explain_sql(
                 sql_query=generated_sql,
                 model_name=selected_model,
                 api_key=api_key
             )
-
         except Exception:
-
             sql_explanation = "Explanation could not be generated."
 
-# ===========================================================
-# Display Assistant Response
-# ===========================================================
-
+    # Display Assistant Response
     with st.chat_message("assistant"):
 
-        # ----------------------------
         # Generated SQL
-        # ----------------------------
-
         st.subheader("📝 Generated SQL")
-
         st.code(
             generated_sql,
             language="sql"
         )
+        st.info("💡 Select the SQL above and copy it (Ctrl+C / Cmd+C).")
 
-        #st.info("💡 Select the SQL above and copy it (Ctrl+C / Cmd+C).")
-
-        # ----------------------------
         # Query Results
-        # ----------------------------
-
         st.subheader("📊 Query Results")
 
         if query_result is not None:
-
             if query_result.empty:
-
                 st.info("No records found for this query.")
-
             else:
-
-                # Display Results
                 st.dataframe(
                     query_result,
                     use_container_width=True
                 )
-
                 st.success(f"✅ {len(query_result)} record(s) retrieved successfully.")
 
-                # Convert DataFrame to CSV
                 csv = query_result.to_csv(index=False).encode("utf-8")
+                filename = f"query_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
-                # Generate Unique Filename
-                filename = (
-                    f"query_results_"
-                    f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-                )
-
-                # Download Button
                 st.download_button(
                     label="📥 Download Results as CSV",
                     data=csv,
@@ -315,28 +284,18 @@ if user_question:
                     mime="text/csv",
                     use_container_width=True
                 )
-
         else:
-
             st.error("❌ Failed to execute SQL query.")
-
             st.code(database_error)
 
-        # ----------------------------
         # SQL Explanation
-        # ----------------------------
-
         with st.expander(
             "💡 SQL Explanation",
             expanded=True
         ):
-
             st.write(sql_explanation)
 
-# ===========================================================
-# Save Assistant Response
-# ===========================================================
-
+    # Save Assistant Response
     st.session_state.messages.append(
         {
             "role": "assistant",
