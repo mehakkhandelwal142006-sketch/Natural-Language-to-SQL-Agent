@@ -23,7 +23,6 @@ def create_llm(model_name, api_key):
     """
     Creates a Gemini LLM instance.
     """
-
     return ChatGoogleGenerativeAI(
         model=model_name,
         google_api_key=api_key,
@@ -39,7 +38,6 @@ def clean_sql(sql):
     """
     Removes markdown formatting if Gemini returns it.
     """
-
     if not sql:
         return ""
 
@@ -54,13 +52,12 @@ def clean_sql(sql):
 # Generate SQL
 # ===========================================================
 
-def generate_sql(question, model_name, api_key):
+def generate_sql(question, model_name, api_key, db_path=None):
     """
     Converts a natural language question into SQL.
     """
-
-    # Read schema from database
-    schema = get_database_schema()
+    # Read schema from target database
+    schema = get_database_schema(db_path=db_path)
 
     # Create prompt
     prompt = SQL_GENERATION_PROMPT.format(
@@ -76,22 +73,15 @@ def generate_sql(question, model_name, api_key):
 
     # Handle Gemini response
     if isinstance(response.content, list):
-
         output = ""
-
         for item in response.content:
-
             if hasattr(item, "text"):
                 output += item.text
-
             elif isinstance(item, dict):
                 output += item.get("text", "")
-
             else:
                 output += str(item)
-
     else:
-
         output = response.content
 
     return clean_sql(output)
@@ -105,7 +95,6 @@ def explain_sql(sql_query, model_name, api_key):
     """
     Explains the generated SQL query in simple English.
     """
-
     prompt = SQL_EXPLANATION_PROMPT.format(
         sql_query=sql_query
     )
@@ -115,22 +104,15 @@ def explain_sql(sql_query, model_name, api_key):
     response = llm.invoke(prompt)
 
     if isinstance(response.content, list):
-
         explanation = ""
-
         for item in response.content:
-
             if hasattr(item, "text"):
                 explanation += item.text
-
             elif isinstance(item, dict):
                 explanation += item.get("text", "")
-
             else:
                 explanation += str(item)
-
     else:
-
         explanation = response.content
 
     return explanation.strip()
