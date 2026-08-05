@@ -6,6 +6,7 @@ Natural Language to SQL Query Generator
 """
 
 import streamlit as st
+from datetime import datetime
 
 from config import (
     APP_NAME,
@@ -272,6 +273,10 @@ if user_question:
             language="sql"
         )
 
+        st.info("💡 Select the SQL above and copy it (Ctrl+C / Cmd+C).")
+
+      
+
         # ----------------------------
         # Query Results
         # ----------------------------
@@ -279,22 +284,43 @@ if user_question:
         st.subheader("📊 Query Results")
 
         if query_result is not None:
-
-            if query_result.empty:
-
-                st.info("No records found.")
-
-            else:
-
-                st.dataframe(
-                    query_result,
-                    use_container_width=True
-                )
-
+    
+                if query_result.empty:
+    
+                    st.info("No records found for this query.")
+    
+                else:
+    
+                    # Display Results
+                    st.dataframe(
+                        query_result,
+                        use_container_width=True
+                    )
+    
+                    st.success(f"✅ {len(query_result)} record(s) retrieved successfully.")
+    
+                    # Convert DataFrame to CSV
+                    csv = query_result.to_csv(index=False).encode("utf-8")
+    
+                    # Generate Unique Filename
+                    filename = (
+                        f"query_results_"
+                        f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                    )
+    
+                    # Download Button
+                    st.download_button(
+                        label="📥 Download Results as CSV",
+                        data=csv,
+                        file_name=filename,
+                        mime="text/csv",
+                        use_container_width=True
+                    )
+    
         else:
-
-            st.error("Failed to execute SQL query.")
-
+        
+            st.error("❌ Failed to execute SQL query.")
+    
             st.code(database_error)
 
         # ----------------------------
