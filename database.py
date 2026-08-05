@@ -4,6 +4,7 @@ Database Operations
 ===========================================================
 """
 
+import os
 import sqlite3
 import pandas as pd
 from sqlalchemy import create_engine
@@ -28,6 +29,9 @@ def get_connection():
     """
 
     if DB_TYPE.lower() == "sqlite":
+        db_dir = os.path.dirname(SQLITE_DATABASE)
+        if db_dir:
+            os.makedirs(db_dir, exist_ok=True)
         return sqlite3.connect(SQLITE_DATABASE)
 
     elif DB_TYPE.lower() == "mysql":
