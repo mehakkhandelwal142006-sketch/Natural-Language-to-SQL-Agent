@@ -210,18 +210,17 @@ with st.sidebar:
     # Reset Database
     # -------------------------------------------------------
 
-    if st.button(
-        "🔄 Reset to Default Database",
-        use_container_width=True
-    ):
+    if st.button("🔄 Reset to Default Database"):
 
-        st.session_state.active_db = None
-        st.session_state.uploaded_file_name = None
-        st.session_state.selected_table = None
+    st.session_state.active_db = None
+    st.session_state.uploaded_file_name = None
 
-        st.success("Default database restored.")
+    # Clear selected table
+    for key in ["table_preview", "selected_table"]:
+        if key in st.session_state:
+            del st.session_state[key]
 
-        st.rerun()
+    st.rerun()
 
     st.markdown("---")
 
@@ -293,17 +292,16 @@ with st.expander("📊 Database Explorer", expanded=True):
     try:
 
         tables = get_tables(current_db)
-
-        if not tables:
-            st.warning("No tables found in the selected database.")
-
-        else:
-
-            selected_table = st.selectbox(
-                "📋 Select Table",
-                tables,
-                key="table_selector"
-            )
+        
+        if "selected_table" not in st.session_state:
+            st.session_state.selected_table = tables[0]
+        
+        selected_table = st.selectbox(
+            "Select Table",
+            tables,
+            index=tables.index(st.session_state.selected_table)
+        )
+        
 
             st.session_state.selected_table = selected_table
 
