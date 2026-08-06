@@ -2,7 +2,18 @@
 ===========================================================
 AI SQL Chatbot
 Natural Language to SQL Query Generator
-Supports Default DB & User Custom File Uploads (CSV, Excel, SQLite)
+
+Features
+---------
+✔ Gemini AI
+✔ Default Company Database
+✔ Upload CSV / Excel / SQLite
+✔ Database Explorer
+✔ Suggested Questions
+✔ SQL Generation
+✔ SQL Explanation
+✔ Query Results
+✔ CSV Download
 ===========================================================
 """
 
@@ -42,7 +53,8 @@ from database import (
 st.set_page_config(
     page_title=PAGE_TITLE,
     page_icon=PAGE_ICON,
-    layout=LAYOUT
+    layout=LAYOUT,
+    initial_sidebar_state="expanded"
 )
 
 # ===========================================================
@@ -52,18 +64,35 @@ st.set_page_config(
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Active Database
+# None = Default company.db
 if "active_db" not in st.session_state:
-    st.session_state.active_db = None  # None = use default company.db
+    st.session_state.active_db = None
 
+# Uploaded filename
 if "uploaded_file_name" not in st.session_state:
     st.session_state.uploaded_file_name = None
+
+# Currently selected preview table
+if "selected_table" not in st.session_state:
+    st.session_state.selected_table = None
+
+# Query history
+if "query_history" not in st.session_state:
+    st.session_state.query_history = []
+
+# Suggested questions
+if "suggested_questions" not in st.session_state:
+    st.session_state.suggested_questions = []
 
 # ===========================================================
 # Header
 # ===========================================================
 
 st.title(APP_NAME)
+
 st.caption(APP_DESCRIPTION)
+
 st.markdown("---")
 
 # ===========================================================
