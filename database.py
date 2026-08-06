@@ -199,46 +199,57 @@ def validate_sql(sql):
 
 def get_tables(db_path=None):
     """
-    Returns all table names from the active database.
+    Returns all table names from the selected database.
     """
 
-    engine = get_engine(db_path)
+    conn = get_connection(db_path=db_path)
 
-    with engine.connect() as conn:
-        result = conn.execute(
-            text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
-            )
-        )
+    try:
+        cursor = conn.cursor()
 
-        return [row[0] for row in result]
+        tables = cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
+        ).fetchall()
+
+        return [table[0] for table in tables]
+
+    finally:
+        conn.close()
 
 def preview_table(table_name, db_path=None, limit=100):
     """
-    Returns first few rows of a table.
+    Returns first few rows from the selected table.
     """
 
-    engine = get_engine(db_path)
+    conn = get_connection(db_path=db_path)
 
-    query = f"SELECT * FROM {table_name} LIMIT {limit}"
+    try:
+        query = f"SELECT * FROM {table_name} LIMIT {limit}"
+        return pd.read_sql_query(query, conn)
 
-    return pd.read_sql(query, engine)
+    finally:
+        conn.close()
     
 def table_info(table_name, db_path=None):
     """
     Returns row count and column names.
     """
 
-    engine = get_engine(db_path)
+    conn = get_connection(db_path=db_path)
 
-    rows = pd.read_sql(
-        f"SELECT COUNT(*) as total FROM {table_name}",
-        engine
-    ).iloc[0]["total"]
+    try:
 
-    columns = pd.read_sql(
-        f"PRAGMA table_info({table_name})",
-        engine
-    )["name"].tolist()
+        rows = pd.read_sql_query(
+            f"SELECT COUNT(*) AS total FROM {table_name}",
+            conn
+        ).iloc[0]["total"]
 
-    return rows, columns
+        columns = pd.read_sql_query(
+            f"PRAGMA table_info('{table_name}')",
+            conn
+        )["name"].tolist()
+
+        return rows, columns
+
+    finally:
+        conn.close()
