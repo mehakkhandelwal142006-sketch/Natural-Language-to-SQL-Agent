@@ -773,7 +773,7 @@ with footer_col1:
         """
 Natural Language to SQL Agent
 
-Powered by Google Gemini AI • Streamlit • SQLAlchemy
+Powered by Google Gemini AI • Streamlit 
 """
     )
 
