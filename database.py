@@ -187,7 +187,7 @@ def load_custom_file_to_sqlite(uploaded_file, target_db="data/uploaded.db"):
             "SELECT name FROM sqlite_master WHERE type='table';"
         ).fetchall()
 
-print("Tables in uploaded.db:", tables)
+        print("Tables in uploaded.db:", tables)
 
         conn.close()
 
