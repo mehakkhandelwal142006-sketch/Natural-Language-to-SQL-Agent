@@ -137,19 +137,16 @@ def load_custom_file_to_sqlite(uploaded_file, target_db="data/uploaded.db"):
     and loads them into target_db.
     """
 
+    # Create data folder if it doesn't exist
     db_dir = os.path.dirname(target_db)
     if db_dir:
         os.makedirs(db_dir, exist_ok=True)
 
-    # Ensure data directory exists
-    os.makedirs(os.path.dirname(target_db), exist_ok=True)
-
     file_name = uploaded_file.name
     ext = os.path.splitext(file_name)[1].lower()
 
-  
-    # Remove previous uploaded database only if it exists
-    if os.path.exists(target_db):
+    # Remove previous uploaded database
+    if os.path.isfile(target_db):
         os.remove(target_db)
 
     # ==========================================================
