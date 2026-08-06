@@ -285,7 +285,7 @@ with st.expander("📊 Database Explorer", expanded=True):
     st.success(f"Currently Using: **{current_db_name}**")
 
     try:
-
+        st.write("Current DB:", current_db)
         tables = get_tables(current_db)
 
         if tables:
