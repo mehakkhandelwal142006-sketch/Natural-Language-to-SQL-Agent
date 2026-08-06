@@ -29,7 +29,10 @@ from ai_agent import (
 from database import (
     execute_query,
     get_database_schema,
-    load_custom_file_to_sqlite
+    load_custom_file_to_sqlite,
+    get_tables,
+    preview_table,
+    table_info
 )
 
 # ===========================================================
@@ -113,11 +116,37 @@ with st.sidebar:
                 st.error(f"Failed to process file: {e}")
 
     if st.session_state.active_db:
-        st.info(f"📊 Currently querying: **{st.session_state.uploaded_file_name}**")
-        if st.button("🔄 Reset to Default Database"):
-            st.session_state.active_db = None
-            st.session_state.uploaded_file_name = None
-            st.rerun()
+
+    st.info(
+        f"📊 Currently querying: **{st.session_state.uploaded_file_name}**"
+    )
+
+    tables = get_tables(st.session_state.active_db)
+
+    if tables:
+
+        selected_table = st.selectbox(
+            "📋 Available Tables",
+            tables
+        )
+
+        rows, columns = table_info(
+            selected_table,
+            st.session_state.active_db
+        )
+
+        st.write(f"**Rows:** {rows}")
+        st.write(f"**Columns:** {len(columns)}")
+
+        st.write("**Column Names:**")
+
+        for column in columns:
+            st.write(f"• {column}")
+
+    if st.button("🔄 Reset to Default Database"):
+        st.session_state.active_db = None
+        st.session_state.uploaded_file_name = None
+        st.rerun()
 
     st.markdown("---")
 
@@ -142,7 +171,36 @@ with st.sidebar:
 # ===========================================================
 # Welcome Section
 # ===========================================================
+# ===========================================================
+# Dataset Preview
+# ===========================================================
 
+active_db = st.session_state.active_db
+
+if active_db:
+
+    tables = get_tables(active_db)
+
+    if tables:
+
+        st.subheader("📊 Dataset Preview")
+
+        preview_selected = st.selectbox(
+            "Select Table to Preview",
+            tables
+        )
+
+        preview_df = preview_table(
+            preview_selected,
+            active_db
+        )
+
+        st.dataframe(
+            preview_df,
+            use_container_width=True
+        )
+
+        st.caption("Showing first 100 rows")
 if len(st.session_state.messages) == 0:
     st.info(WELCOME_MESSAGE)
 
