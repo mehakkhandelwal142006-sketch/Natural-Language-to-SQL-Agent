@@ -107,34 +107,35 @@ if st.button("🔄 Reset to Default Database"):
 # Welcome Section
 # ===========================================================
 # ===========================================================
-# Database Preview
+# Database Explorer
 # ===========================================================
 
-# Determine which database is active
+# Determine active database
 if st.session_state.active_db:
     current_db = st.session_state.active_db
-    database_name = st.session_state.uploaded_file_name
+    current_db_name = st.session_state.uploaded_file_name
 else:
-    current_db = None  # Uses default company.db
-    database_name = "Default Company Database"
+    current_db = None
+    current_db_name = "Default Company Database"
 
 st.subheader("📊 Database Explorer")
 
-st.success(f"Currently Using: {database_name}")
+st.success(f"Currently Using: **{current_db_name}**")
 
 try:
+
     tables = get_tables(current_db)
 
     if tables:
 
-        selected_preview_table = st.selectbox(
-            "📋 Select Table",
+        selected_table = st.selectbox(
+            "Select Table",
             tables,
-            key="preview_table_selector"
+            key="table_preview"
         )
 
         rows, columns = table_info(
-            selected_preview_table,
+            selected_table,
             current_db
         )
 
@@ -150,15 +151,15 @@ try:
 
         st.write(", ".join(columns))
 
-        st.write("### 👀 Data Preview")
+        st.write("### 👀 Dataset Preview")
 
-        preview_df = preview_table(
-            selected_preview_table,
+        preview = preview_table(
+            selected_table,
             current_db
         )
 
         st.dataframe(
-            preview_df,
+            preview,
             use_container_width=True,
             height=350
         )
@@ -166,7 +167,8 @@ try:
         st.caption("Showing first 100 rows")
 
 except Exception as e:
-    st.warning(f"Unable to preview database: {e}")
+
+    st.warning(f"Unable to load database preview: {e}")
 
 st.markdown("---")
 if len(st.session_state.messages) == 0:
