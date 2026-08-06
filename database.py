@@ -199,14 +199,16 @@ def validate_sql(sql):
 
 def get_tables(db_path=None):
     """
-    Returns list of tables from the selected database.
+    Returns all table names from the active database.
     """
 
     engine = get_engine(db_path)
 
     with engine.connect() as conn:
         result = conn.execute(
-            text("SELECT name FROM sqlite_master WHERE type='table';")
+            text(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
+            )
         )
 
         return [row[0] for row in result]
