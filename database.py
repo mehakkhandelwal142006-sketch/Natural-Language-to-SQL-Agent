@@ -211,3 +211,14 @@ def get_tables(db_path=None):
 
         return [row[0] for row in result]
 
+def preview_table(table_name, db_path=None, limit=100):
+    """
+    Returns first few rows of a table.
+    """
+
+    engine = get_engine(db_path)
+
+    query = f"SELECT * FROM {table_name} LIMIT {limit}"
+
+    return pd.read_sql(query, engine)
+
