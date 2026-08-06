@@ -207,31 +207,31 @@ with st.sidebar:
         st.info("Using: Default Company Database")
 
     # -------------------------------------------------------
-    # Reset Database
-    # -------------------------------------------------------
+# Reset Database
+# -------------------------------------------------------
 
-    if st.button("🔄 Reset to Default Database"):
+if st.button("🔄 Reset to Default Database"):
 
     st.session_state.active_db = None
     st.session_state.uploaded_file_name = None
 
-    # Clear selected table
+    # Clear previous selections
     for key in ["table_preview", "selected_table"]:
         if key in st.session_state:
             del st.session_state[key]
 
     st.rerun()
 
-    st.markdown("---")
+st.markdown("---")
 
-    # -------------------------------------------------------
-    # About
-    # -------------------------------------------------------
+# -------------------------------------------------------
+# About
+# -------------------------------------------------------
 
-    with st.expander("ℹ️ About This Project"):
+with st.expander("ℹ️ About This Project"):
 
-        st.write(
-            """
+    st.write(
+        """
 This application converts natural language into SQL queries
 using Google's Gemini AI.
 
@@ -249,27 +249,22 @@ using Google's Gemini AI.
 - Database Explorer
 - Download Results as CSV
 """
-        )
+    )
 
-    st.markdown("---")
+st.markdown("---")
 
-    # -------------------------------------------------------
-    # Sample Questions
-    # -------------------------------------------------------
+# -------------------------------------------------------
+# Sample Questions
+# -------------------------------------------------------
 
-    with st.expander("💡 Example Questions"):
+with st.expander("💡 Example Questions"):
 
-        st.markdown("""
+    st.markdown("""
 - Show all employees
-
 - Count total employees
-
 - Show employees earning more than 50000
-
 - Find average salary
-
 - Group employees by department
-
 - Show top 10 records
 """)
 
@@ -292,16 +287,21 @@ with st.expander("📊 Database Explorer", expanded=True):
     try:
 
         tables = get_tables(current_db)
-        
-        if "selected_table" not in st.session_state:
-            st.session_state.selected_table = tables[0]
-        
-        selected_table = st.selectbox(
-            "Select Table",
-            tables,
-            index=tables.index(st.session_state.selected_table)
-        )
-        
+
+        if tables:
+
+            # Automatically select first table after upload
+            if (
+                "selected_table" not in st.session_state
+                or st.session_state.selected_table not in tables
+            ):
+                st.session_state.selected_table = tables[0]
+
+            selected_table = st.selectbox(
+                "Select Table",
+                tables,
+                index=tables.index(st.session_state.selected_table)
+            )
 
             st.session_state.selected_table = selected_table
 
@@ -329,6 +329,12 @@ with st.expander("📊 Database Explorer", expanded=True):
                 )
 
             st.markdown("---")
+
+        else:
+            st.warning("No tables found in the database.")
+
+    except Exception as e:
+        st.error(f"Unable to load database explorer: {e}")
 
             # --------------------------------------------------
             # Columns
