@@ -112,6 +112,24 @@ def execute_query(sql, db_path=None):
     finally:
         conn.close()
 
+# ===========================================================
+# Clean Table Name
+# ===========================================================
+
+def clean_table_name(filename):
+    """
+    Converts filename into a valid SQL table name.
+    Example:
+    My Sales Data.csv -> my_sales_data
+    """
+
+    name = os.path.splitext(filename)[0]
+    name = re.sub(r'[^a-zA-Z0-9_]', '_', name)
+    name = re.sub(r'_+', '_', name)
+    name = name.strip("_").lower()
+
+    return name if name else "uploaded_table"
+
 
 def load_custom_file_to_sqlite(uploaded_file, target_db="data/uploaded.db"):
     """
@@ -126,7 +144,8 @@ def load_custom_file_to_sqlite(uploaded_file, target_db="data/uploaded.db"):
     file_name = uploaded_file.name
     ext = os.path.splitext(file_name)[1].lower()
 
-    # Always delete previous uploaded database
+  
+    # Remove previous uploaded database only if it exists
     if os.path.exists(target_db):
         os.remove(target_db)
 
