@@ -137,74 +137,74 @@ with st.sidebar:
     st.markdown("---")
 
     # -------------------------------------------------------
-    # Upload Dataset
-    # -------------------------------------------------------
+# Upload Dataset
+# -------------------------------------------------------
 
-    st.subheader("📂 Upload Dataset")
+st.subheader("📂 Upload Dataset")
 
-    st.caption(
-        "Upload a CSV, Excel, or SQLite database to query your own data."
-    )
+st.caption(
+    "Upload a CSV, Excel, or SQLite database to query your own data."
+)
 
-    uploaded_file = st.file_uploader(
-        "Choose File",
-        type=[
-            "csv",
-            "xlsx",
-            "xls",
-            "db",
-            "sqlite",
-            "sqlite3"
-        ]
-    )
+uploaded_file = st.file_uploader(
+    "Choose File",
+    type=[
+        "csv",
+        "xlsx",
+        "xls",
+        "db",
+        "sqlite",
+        "sqlite3"
+    ]
+)
 
-    if uploaded_file is not None:
+if uploaded_file is not None:
 
-        # Process only when a new file is uploaded
-        if st.session_state.uploaded_file_name != uploaded_file.name:
-    
-            try:
-    
-                target_db = "data/uploaded.db"
-    
-                msg = load_custom_file_to_sqlite(
-                    uploaded_file,
-                    target_db=target_db
-                )
-    
-                st.session_state.active_db = target_db
-                st.session_state.uploaded_file_name = uploaded_file.name
-    
-                # Reset previous table selection
-                for key in ["table_preview", "selected_table"]:
-                    if key in st.session_state:
-                        del st.session_state[key]
-    
-                st.success(f"✅ {msg}")
-    
-                # Refresh the application
-                st.rerun()
-    
-            except Exception as e:
-                st.error(f"Failed to process file: {e}")
+    try:
 
-    st.markdown("---")
+        target_db = "data/uploaded.db"
 
-    # -------------------------------------------------------
-    # Active Database
-    # -------------------------------------------------------
-
-    st.subheader("📊 Current Database")
-
-    if st.session_state.active_db:
-
-        st.success(
-            f"Using: {st.session_state.uploaded_file_name}"
+        msg = load_custom_file_to_sqlite(
+            uploaded_file,
+            target_db=target_db
         )
 
-    else:
+        st.session_state.active_db = target_db
+        st.session_state.uploaded_file_name = uploaded_file.name
 
-        st.info("Using: Default Company Database")
+        # Reset explorer
+        for key in [
+            "selected_table",
+            "table_preview",
+            "suggested_questions"
+        ]:
+            if key in st.session_state:
+                del st.session_state[key]
+
+        st.success(f"✅ {msg}")
+
+        st.rerun()
+
+    except Exception as e:
+        st.error(f"Failed to process file: {e}")
+
+st.markdown("---")
+
+# -------------------------------------------------------
+# Active Database
+# -------------------------------------------------------
+
+st.subheader("📊 Current Database")
+
+if st.session_state.active_db:
+
+    st.success(
+        f"Using: {st.session_state.uploaded_file_name}"
+    )
+
+else:
+
+    st.info("Using: Default Company Database")
 
     # -------------------------------------------------------
 # Reset Database
