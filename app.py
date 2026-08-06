@@ -99,42 +99,173 @@ st.markdown("---")
 # Sidebar
 # ===========================================================
 
-# Current Database
+with st.sidebar:
 
-if st.session_state.active_db:
-    st.success(f"📂 Using: {st.session_state.uploaded_file_name}")
-else:
-    st.success("📂 Using: Default Company Database")
+    st.header("⚙️ Configuration")
 
-if st.button("🔄 Reset to Default Database"):
+    # -------------------------------------------------------
+    # Gemini API Key
+    # -------------------------------------------------------
 
-    st.session_state.active_db = None
-    st.session_state.uploaded_file_name = None
-    st.rerun()
+    st.subheader("🔑 Gemini API Key")
 
-    st.markdown("---")
+    api_key = st.text_input(
+        "Enter your Gemini API Key",
+        type="password",
+        placeholder="Paste your Gemini API Key here..."
+    )
 
     if api_key:
         st.success("✅ API Key Loaded")
     else:
-        st.warning("⚠️ Please enter your Gemini API Key")
+        st.warning("⚠️ API Key Required")
 
     st.markdown("---")
 
-    st.info(
-        """
-        💡 Example Questions
+    # -------------------------------------------------------
+    # Model Selection
+    # -------------------------------------------------------
 
-        • Show all records
-        • Count total rows
-        • Group by category and show average
-        • Filter records where amount > 500
-        """
+    st.subheader("🤖 Gemini Model")
+
+    selected_model = st.selectbox(
+        "Choose Gemini Model",
+        AVAILABLE_MODELS,
+        index=AVAILABLE_MODELS.index(DEFAULT_MODEL)
     )
 
-# ===========================================================
-# Welcome Section
-# ===========================================================
+    st.markdown("---")
+
+    # -------------------------------------------------------
+    # Upload Dataset
+    # -------------------------------------------------------
+
+    st.subheader("📂 Upload Dataset")
+
+    st.caption(
+        "Upload a CSV, Excel, or SQLite database to query your own data."
+    )
+
+    uploaded_file = st.file_uploader(
+        "Choose File",
+        type=[
+            "csv",
+            "xlsx",
+            "xls",
+            "db",
+            "sqlite",
+            "sqlite3"
+        ]
+    )
+
+    if uploaded_file is not None:
+
+        if st.session_state.uploaded_file_name != uploaded_file.name:
+
+            try:
+
+                target_db = "data/uploaded.db"
+
+                message = load_custom_file_to_sqlite(
+                    uploaded_file,
+                    target_db
+                )
+
+                st.session_state.active_db = target_db
+                st.session_state.uploaded_file_name = uploaded_file.name
+
+                st.success(message)
+
+            except Exception as e:
+
+                st.error(f"❌ {e}")
+
+    st.markdown("---")
+
+    # -------------------------------------------------------
+    # Active Database
+    # -------------------------------------------------------
+
+    st.subheader("📊 Current Database")
+
+    if st.session_state.active_db:
+
+        st.success(
+            f"Using: {st.session_state.uploaded_file_name}"
+        )
+
+    else:
+
+        st.info("Using: Default Company Database")
+
+    # -------------------------------------------------------
+    # Reset Database
+    # -------------------------------------------------------
+
+    if st.button(
+        "🔄 Reset to Default Database",
+        use_container_width=True
+    ):
+
+        st.session_state.active_db = None
+        st.session_state.uploaded_file_name = None
+        st.session_state.selected_table = None
+
+        st.success("Default database restored.")
+
+        st.rerun()
+
+    st.markdown("---")
+
+    # -------------------------------------------------------
+    # About
+    # -------------------------------------------------------
+
+    with st.expander("ℹ️ About This Project"):
+
+        st.write(
+            """
+This application converts natural language into SQL queries
+using Google's Gemini AI.
+
+### Supported Files
+
+- CSV
+- Excel (.xlsx/.xls)
+- SQLite Database
+
+### Features
+
+- AI SQL Generation
+- SQL Explanation
+- Dataset Preview
+- Database Explorer
+- Download Results as CSV
+"""
+        )
+
+    st.markdown("---")
+
+    # -------------------------------------------------------
+    # Sample Questions
+    # -------------------------------------------------------
+
+    with st.expander("💡 Example Questions"):
+
+        st.markdown("""
+- Show all employees
+
+- Count total employees
+
+- Show employees earning more than 50000
+
+- Find average salary
+
+- Group employees by department
+
+- Show top 10 records
+""")
+
 # ===========================================================
 # Database Explorer
 # ===========================================================
@@ -147,123 +278,290 @@ else:
     current_db = None
     current_db_name = "Default Company Database"
 
-st.subheader("📊 Database Explorer")
+with st.expander("📊 Database Explorer", expanded=True):
 
-st.success(f"Currently Using: **{current_db_name}**")
+    st.success(f"Currently Using: **{current_db_name}**")
 
-try:
+    try:
 
-    tables = get_tables(current_db)
+        tables = get_tables(current_db)
 
-    if tables:
+        if not tables:
+            st.warning("No tables found in the selected database.")
 
-        selected_table = st.selectbox(
-            "Select Table",
-            tables,
-            key="table_preview"
-        )
+        else:
 
-        rows, columns = table_info(
-            selected_table,
-            current_db
-        )
+            selected_table = st.selectbox(
+                "📋 Select Table",
+                tables,
+                key="table_selector"
+            )
 
-        col1, col2 = st.columns(2)
+            st.session_state.selected_table = selected_table
 
-        with col1:
-            st.metric("Rows", rows)
+            rows, columns = table_info(
+                selected_table,
+                current_db
+            )
 
-        with col2:
-            st.metric("Columns", len(columns))
-        st.write("### 🏷 Available Columns")
+            # --------------------------------------------------
+            # Metrics
+            # --------------------------------------------------
 
-        st.write(", ".join(columns))
+            metric1, metric2 = st.columns(2)
 
-# ===========================================================
-# Suggested Questions
-# ===========================================================
+            with metric1:
+                st.metric(
+                    "📄 Rows",
+                    rows
+                )
 
-st.write("### 💡 Suggested Questions")
+            with metric2:
+                st.metric(
+                    "📑 Columns",
+                    len(columns)
+                )
 
-questions = [
-    f"Show all records from {selected_table}.",
-    f"Count total records in {selected_table}.",
-]
+            st.markdown("---")
 
-# Add suggestions based on column names
-for column in columns:
+            # --------------------------------------------------
+            # Columns
+            # --------------------------------------------------
 
-    col = column.lower()
+            st.subheader("🏷 Available Columns")
 
-    if "name" in col:
-        questions.append(f"Show only the {column} column.")
+            column_text = ""
 
-    if "department" in col or "category" in col:
-        questions.append(f"Group records by {column}.")
+            for column in columns:
+                column_text += f"`{column}`   "
 
-    if "salary" in col or "amount" in col or "price" in col:
-        questions.append(f"Show records where {column} is greater than 50000.")
-        questions.append(f"Find the average {column}.")
+            st.markdown(column_text)
 
-    if "age" in col:
-        questions.append(f"Show records where {column} is greater than 30.")
+            st.markdown("---")
 
-# Remove duplicate questions
-questions = list(dict.fromkeys(questions))
+            # --------------------------------------------------
+            # Suggested Questions
+            # --------------------------------------------------
 
-# Display first 6 suggestions
-for question in questions[:6]:
-    st.info(question)
+            st.subheader("💡 Suggested Questions")
 
-st.write("### 👀 Dataset Preview")
+            suggestions = [
 
-preview = preview_table(
-    selected_table,
-    current_db
-)
+                f"Show all records from {selected_table}",
 
-        st.dataframe(
-            preview,
-            use_container_width=True,
-            height=350
-        )
+                f"Count total records in {selected_table}"
 
-        st.caption("Showing first 100 rows")
+            ]
 
-except Exception as e:
+            for column in columns:
 
-    st.warning(f"Unable to load database preview: {e}")
+                col = column.lower()
+
+                if "name" in col:
+                    suggestions.append(
+                        f"Show only the {column} column"
+                    )
+
+                if "department" in col:
+                    suggestions.append(
+                        f"Group records by {column}"
+                    )
+
+                if "category" in col:
+                    suggestions.append(
+                        f"Group records by {column}"
+                    )
+
+                if "salary" in col:
+                    suggestions.append(
+                        f"Find average {column}"
+                    )
+
+                    suggestions.append(
+                        f"Show records where {column} is greater than 50000"
+                    )
+
+                if "amount" in col:
+                    suggestions.append(
+                        f"Find average {column}"
+                    )
+
+                if "price" in col:
+                    suggestions.append(
+                        f"Find maximum {column}"
+                    )
+
+                if "age" in col:
+                    suggestions.append(
+                        f"Show records where {column} is greater than 30"
+                    )
+
+                if "date" in col:
+                    suggestions.append(
+                        f"Sort records by {column}"
+                    )
+
+            suggestions = list(dict.fromkeys(suggestions))
+
+            st.session_state.suggested_questions = suggestions
+
+            for question in suggestions[:6]:
+                st.info(question)
+
+            st.markdown("---")
+
+            # --------------------------------------------------
+            # Dataset Preview
+            # --------------------------------------------------
+
+            st.subheader("👀 Dataset Preview")
+
+            preview_df = preview_table(
+                selected_table,
+                current_db
+            )
+
+            st.dataframe(
+                preview_df,
+                use_container_width=True,
+                height=350
+            )
+
+            st.caption("Showing first 100 rows.")
+
+    except Exception as e:
+
+        st.error(f"Unable to load database preview.\n\n{e}")
 
 st.markdown("---")
-if len(st.session_state.messages) == 0:
-    st.info(WELCOME_MESSAGE)
 
 # ===========================================================
-# Display Previous Chat Messages
+# Welcome Section
+# ===========================================================
+
+if len(st.session_state.messages) == 0:
+
+    st.info(WELCOME_MESSAGE)
+
+    st.markdown(
+        """
+### 🚀 What can you do?
+
+You can ask questions in plain English such as:
+
+- Show all employees
+- Count total employees
+- Show employees earning more than 50000
+- Find average salary department-wise
+- Sort employees by salary
+- Show top 10 records
+
+The AI will automatically convert your request into SQL,
+execute it and explain the generated query.
+"""
+    )
+
+# ===========================================================
+# Chat Controls
+# ===========================================================
+
+col1, col2 = st.columns([4, 1])
+
+with col2:
+
+    if st.button(
+        "🗑 Clear Chat",
+        use_container_width=True
+    ):
+
+        st.session_state.messages = []
+        st.session_state.query_history = []
+
+        st.rerun()
+
+st.markdown("---")
+
+# ===========================================================
+# Previous Chat Messages
 # ===========================================================
 
 for message in st.session_state.messages:
+
     with st.chat_message(message["role"]):
+
         if message["role"] == "user":
+
             st.write(message["content"])
+
         else:
-            st.markdown("### 📝 Generated SQL")
+
+            st.subheader("📝 Generated SQL")
+
             st.code(
                 message["sql"],
                 language="sql"
             )
 
-            st.markdown("### 📊 Query Results")
-            st.dataframe(
-                message["result"],
-                use_container_width=True
-            )
+            st.subheader("📊 Query Results")
+
+            if message["result"] is not None:
+
+                st.dataframe(
+                    message["result"],
+                    use_container_width=True
+                )
 
             with st.expander(
                 "💡 SQL Explanation",
-                expanded=True
+                expanded=False
             ):
-                st.write(message["explanation"])
+
+                st.write(
+                    message["explanation"]
+                )
+
+# ===========================================================
+# Query History
+# ===========================================================
+
+if len(st.session_state.query_history) > 0:
+
+    st.markdown("---")
+
+    with st.expander(
+        "📜 Query History",
+        expanded=False
+    ):
+
+        for i, sql in enumerate(
+            reversed(st.session_state.query_history),
+            start=1
+        ):
+
+            st.code(
+                sql,
+                language="sql"
+            )
+
+# ===========================================================
+# Suggested Questions
+# ===========================================================
+
+if len(st.session_state.suggested_questions) > 0:
+
+    st.markdown("### 💡 Suggested Questions")
+
+    cols = st.columns(2)
+
+    for i, question in enumerate(
+        st.session_state.suggested_questions[:6]
+    ):
+
+        with cols[i % 2]:
+
+            st.info(question)
+
+st.markdown("---")
 
 # ===========================================================
 # Chat Input
@@ -277,12 +575,20 @@ user_question = st.chat_input(CHAT_PLACEHOLDER)
 
 if user_question:
 
-    # Check API Key
+    # -------------------------------
+    # Validate API Key
+    # -------------------------------
+
     if not api_key:
-        st.error("⚠️ Please enter your Gemini API Key from the sidebar.")
+
+        st.error("⚠ Please enter your Gemini API Key from the sidebar.")
+
         st.stop()
 
-    # Save and display User Message
+    # -------------------------------
+    # Store User Message
+    # -------------------------------
+
     st.session_state.messages.append(
         {
             "role": "user",
@@ -291,90 +597,159 @@ if user_question:
     )
 
     with st.chat_message("user"):
+
         st.write(user_question)
 
-    # Active DB Path (None = default company.db)
+    # Active Database
     active_db = st.session_state.active_db
 
+    # -------------------------------
     # Generate SQL
-    with st.spinner("🤖 Generating SQL Query..."):
+    # -------------------------------
+
+    with st.spinner("🤖 Gemini is generating SQL..."):
+
         try:
+
             generated_sql = generate_sql(
                 question=user_question,
                 model_name=selected_model,
                 api_key=api_key,
                 db_path=active_db
             )
+
         except Exception as e:
-            st.error(f"Error while generating SQL:\n\n{e}")
+
+            st.error(f"Failed to generate SQL.\n\n{e}")
+
             st.stop()
 
+    # -------------------------------
     # Execute SQL
+    # -------------------------------
+
     with st.spinner("📊 Executing SQL Query..."):
+
         try:
-            query_result = execute_query(generated_sql, db_path=active_db)
+
+            query_result = execute_query(
+                generated_sql,
+                db_path=active_db
+            )
+
             database_error = None
+
         except Exception as e:
+
             query_result = None
+
             database_error = str(e)
 
-    # Explain SQL
+    # -------------------------------
+    # Generate SQL Explanation
+    # -------------------------------
+
     with st.spinner("🧠 Explaining SQL Query..."):
+
         try:
+
             sql_explanation = explain_sql(
                 sql_query=generated_sql,
                 model_name=selected_model,
                 api_key=api_key
             )
-        except Exception:
-            sql_explanation = "Explanation could not be generated."
 
-    # Display Assistant Response
+        except Exception:
+
+            sql_explanation = (
+                "Explanation could not be generated."
+            )
+
+    # -------------------------------
+    # Save Query History
+    # -------------------------------
+
+    st.session_state.query_history.append(
+        generated_sql
+    )
+
+    # -------------------------------
+    # Assistant Response
+    # -------------------------------
+
     with st.chat_message("assistant"):
 
-        # Generated SQL
+        st.success("✅ SQL Generated Successfully")
+
         st.subheader("📝 Generated SQL")
+
         st.code(
             generated_sql,
             language="sql"
         )
-        st.info("💡 Select the SQL above and copy it (Ctrl+C / Cmd+C).")
 
-        # Query Results
+        st.info(
+            "💡 Copy the SQL above using Ctrl+C / Cmd+C."
+        )
+
         st.subheader("📊 Query Results")
 
         if query_result is not None:
+
             if query_result.empty:
-                st.info("No records found for this query.")
+
+                st.warning(
+                    "No matching records found."
+                )
+
             else:
+
                 st.dataframe(
                     query_result,
                     use_container_width=True
                 )
-                st.success(f"✅ {len(query_result)} record(s) retrieved successfully.")
 
-                csv = query_result.to_csv(index=False).encode("utf-8")
-                filename = f"query_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                st.success(
+                    f"{len(query_result)} record(s) retrieved."
+                )
+
+                # CSV Download
+                csv = query_result.to_csv(
+                    index=False
+                ).encode("utf-8")
+
+                filename = (
+                    f"query_results_"
+                    f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                )
 
                 st.download_button(
-                    label="📥 Download Results as CSV",
-                    data=csv,
-                    file_name=filename,
-                    mime="text/csv",
+                    "📥 Download Results as CSV",
+                    csv,
+                    filename,
+                    "text/csv",
                     use_container_width=True
                 )
+
         else:
-            st.error("❌ Failed to execute SQL query.")
+
+            st.error(
+                "Database execution failed."
+            )
+
             st.code(database_error)
 
-        # SQL Explanation
         with st.expander(
             "💡 SQL Explanation",
-            expanded=True
+            expanded=False
         ):
+
             st.write(sql_explanation)
 
-    # Save Assistant Response
+# ===========================================================
+# Save Assistant Response
+# ===========================================================
+
     st.session_state.messages.append(
         {
             "role": "assistant",
@@ -383,3 +758,75 @@ if user_question:
             "explanation": sql_explanation
         }
     )
+
+# ===========================================================
+# Footer
+# ===========================================================
+
+st.markdown("---")
+
+footer_col1, footer_col2 = st.columns([3, 1])
+
+with footer_col1:
+
+    st.caption(
+        """
+Natural Language to SQL Agent
+
+Powered by Google Gemini AI • Streamlit • SQLAlchemy
+"""
+    )
+
+with footer_col2:
+
+    st.caption("Version 1.0")
+
+st.markdown(
+    """
+<style>
+
+.block-container{
+
+    padding-top:2rem;
+    padding-bottom:2rem;
+
+}
+
+div[data-testid="stMetric"]{
+
+    border:1px solid #E5E7EB;
+    padding:15px;
+    border-radius:12px;
+
+}
+
+div.stButton>button{
+
+    border-radius:10px;
+    height:45px;
+
+}
+
+div.stDownloadButton>button{
+
+    border-radius:10px;
+    height:45px;
+
+}
+
+.stCodeBlock{
+
+    border-radius:12px;
+
+}
+
+</style>
+""",
+unsafe_allow_html=True
+)
+
+
+
+
+
+
