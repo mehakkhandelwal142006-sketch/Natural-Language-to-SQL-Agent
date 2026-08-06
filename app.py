@@ -70,82 +70,18 @@ st.markdown("---")
 # Sidebar
 # ===========================================================
 
-with st.sidebar:
+# Current Database
 
-    st.header("⚙️ Configuration")
+if st.session_state.active_db:
+    st.success(f"📂 Using: {st.session_state.uploaded_file_name}")
+else:
+    st.success("📂 Using: Default Company Database")
 
-    st.markdown("### 🔑 Gemini API Key")
+if st.button("🔄 Reset to Default Database"):
 
-    api_key = st.text_input(
-        "Enter your Gemini API Key",
-        type="password",
-        placeholder="Paste your API Key here"
-    )
-
-    st.markdown("---")
-
-    st.markdown("### 🤖 Gemini Model")
-
-    selected_model = st.selectbox(
-        "Choose Model",
-        AVAILABLE_MODELS,
-        index=AVAILABLE_MODELS.index(DEFAULT_MODEL) if DEFAULT_MODEL in AVAILABLE_MODELS else 0
-    )
-
-    st.markdown("---")
-
-    st.markdown("### 📂 Upload Custom Dataset")
-    st.caption("Upload a CSV, Excel (.xlsx), or SQLite (.db) file to query your own data!")
-
-    uploaded_file = st.file_uploader(
-        "Choose a file",
-        type=["csv", "xlsx", "xls", "db", "sqlite", "sqlite3"],
-        help="Upload CSV, Excel or SQLite DB files"
-    )
-
-    if uploaded_file is not None:
-        # Check if new file is uploaded
-        if st.session_state.uploaded_file_name != uploaded_file.name:
-            try:
-                target_db = "data/uploaded.db"
-                msg = load_custom_file_to_sqlite(uploaded_file, target_db=target_db)
-                st.session_state.active_db = target_db
-                st.session_state.uploaded_file_name = uploaded_file.name
-                st.success(f"✅ {msg}")
-            except Exception as e:
-                st.error(f"Failed to process file: {e}")
-
-    if st.session_state.active_db:
-        st.info(
-            f"📊 Currently querying: **{st.session_state.uploaded_file_name}**"
-        )
-
-    tables = get_tables(st.session_state.active_db)
-
-    if tables:
-
-        selected_table = st.selectbox(
-            "📋 Available Tables",
-            tables
-        )
-
-        rows, columns = table_info(
-            selected_table,
-            st.session_state.active_db
-        )
-
-        st.write(f"**Rows:** {rows}")
-        st.write(f"**Columns:** {len(columns)}")
-
-        st.write("**Column Names:**")
-
-        for column in columns:
-            st.write(f"• {column}")
-
-    if st.button("🔄 Reset to Default Database"):
-        st.session_state.active_db = None
-        st.session_state.uploaded_file_name = None
-        st.rerun()
+    st.session_state.active_db = None
+    st.session_state.uploaded_file_name = None
+    st.rerun()
 
     st.markdown("---")
 
