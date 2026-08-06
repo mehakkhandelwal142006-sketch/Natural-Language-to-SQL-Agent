@@ -116,10 +116,9 @@ with st.sidebar:
                 st.error(f"Failed to process file: {e}")
 
     if st.session_state.active_db:
-
-    st.info(
-        f"📊 Currently querying: **{st.session_state.uploaded_file_name}**"
-    )
+        st.info(
+            f"📊 Currently querying: **{st.session_state.uploaded_file_name}**"
+        )
 
     tables = get_tables(st.session_state.active_db)
 
