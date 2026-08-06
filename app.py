@@ -290,7 +290,7 @@ with st.expander("📊 Database Explorer", expanded=True):
 
         if tables:
 
-            # Automatically select first table after upload
+            # Automatically select first table
             if (
                 "selected_table" not in st.session_state
                 or st.session_state.selected_table not in tables
@@ -310,59 +310,41 @@ with st.expander("📊 Database Explorer", expanded=True):
                 current_db
             )
 
-            # --------------------------------------------------
+            # -------------------------------
             # Metrics
-            # --------------------------------------------------
+            # -------------------------------
 
-            metric1, metric2 = st.columns(2)
+            col1, col2 = st.columns(2)
 
-            with metric1:
-                st.metric(
-                    "📄 Rows",
-                    rows
-                )
+            with col1:
+                st.metric("📄 Rows", rows)
 
-            with metric2:
-                st.metric(
-                    "📑 Columns",
-                    len(columns)
-                )
+            with col2:
+                st.metric("📑 Columns", len(columns))
 
             st.markdown("---")
 
-        else:
-            st.warning("No tables found in the database.")
-
-    except Exception as e:
-        st.error(f"Unable to load database explorer: {e}")
-
-            # --------------------------------------------------
+            # -------------------------------
             # Columns
-            # --------------------------------------------------
+            # -------------------------------
 
             st.subheader("🏷 Available Columns")
 
-            column_text = ""
-
-            for column in columns:
-                column_text += f"`{column}`   "
-
-            st.markdown(column_text)
+            st.markdown(
+                " | ".join([f"`{col}`" for col in columns])
+            )
 
             st.markdown("---")
 
-            # --------------------------------------------------
+            # -------------------------------
             # Suggested Questions
-            # --------------------------------------------------
+            # -------------------------------
 
             st.subheader("💡 Suggested Questions")
 
             suggestions = [
-
                 f"Show all records from {selected_table}",
-
                 f"Count total records in {selected_table}"
-
             ]
 
             for column in columns:
@@ -370,48 +352,23 @@ with st.expander("📊 Database Explorer", expanded=True):
                 col = column.lower()
 
                 if "name" in col:
-                    suggestions.append(
-                        f"Show only the {column} column"
-                    )
+                    suggestions.append(f"Show only the {column} column")
 
-                if "department" in col:
-                    suggestions.append(
-                        f"Group records by {column}"
-                    )
+                if "department" in col or "category" in col:
+                    suggestions.append(f"Group records by {column}")
 
-                if "category" in col:
-                    suggestions.append(
-                        f"Group records by {column}"
-                    )
-
-                if "salary" in col:
-                    suggestions.append(
-                        f"Find average {column}"
-                    )
-
-                    suggestions.append(
-                        f"Show records where {column} is greater than 50000"
-                    )
-
-                if "amount" in col:
-                    suggestions.append(
-                        f"Find average {column}"
-                    )
+                if "salary" in col or "amount" in col:
+                    suggestions.append(f"Find average {column}")
+                    suggestions.append(f"Show records where {column} is greater than 50000")
 
                 if "price" in col:
-                    suggestions.append(
-                        f"Find maximum {column}"
-                    )
+                    suggestions.append(f"Find maximum {column}")
 
                 if "age" in col:
-                    suggestions.append(
-                        f"Show records where {column} is greater than 30"
-                    )
+                    suggestions.append(f"Show records where {column} is greater than 30")
 
                 if "date" in col:
-                    suggestions.append(
-                        f"Sort records by {column}"
-                    )
+                    suggestions.append(f"Sort records by {column}")
 
             suggestions = list(dict.fromkeys(suggestions))
 
@@ -422,9 +379,9 @@ with st.expander("📊 Database Explorer", expanded=True):
 
             st.markdown("---")
 
-            # --------------------------------------------------
+            # -------------------------------
             # Dataset Preview
-            # --------------------------------------------------
+            # -------------------------------
 
             st.subheader("👀 Dataset Preview")
 
@@ -441,12 +398,14 @@ with st.expander("📊 Database Explorer", expanded=True):
 
             st.caption("Showing first 100 rows.")
 
+        else:
+            st.warning("No tables found in the database.")
+
     except Exception as e:
 
-        st.error(f"Unable to load database preview.\n\n{e}")
+        st.error(f"Unable to load database explorer.\n\n{e}")
 
 st.markdown("---")
-
 # ===========================================================
 # Welcome Section
 # ===========================================================
