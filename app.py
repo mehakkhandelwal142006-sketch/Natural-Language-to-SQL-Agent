@@ -146,9 +146,9 @@ try:
 
         with col2:
             st.metric("Columns", len(columns))
-st.write("### 🏷 Available Columns")
+        st.write("### 🏷 Available Columns")
 
-st.write(", ".join(columns))
+        st.write(", ".join(columns))
 
 # ===========================================================
 # Suggested Questions
