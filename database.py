@@ -181,6 +181,13 @@ def load_custom_file_to_sqlite(uploaded_file, target_db="data/uploaded.db"):
             if_exists="replace",
             index=False
         )
+        cursor = conn.cursor()
+
+        tables = cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table';"
+        ).fetchall()
+
+print("Tables in uploaded.db:", tables)
 
         conn.close()
 
