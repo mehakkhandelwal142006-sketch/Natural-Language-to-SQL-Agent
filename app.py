@@ -146,17 +146,52 @@ try:
 
         with col2:
             st.metric("Columns", len(columns))
+st.write("### 🏷 Available Columns")
 
-        st.write("### 🏷 Available Columns")
+st.write(", ".join(columns))
 
-        st.write(", ".join(columns))
+# ===========================================================
+# Suggested Questions
+# ===========================================================
 
-        st.write("### 👀 Dataset Preview")
+st.write("### 💡 Suggested Questions")
 
-        preview = preview_table(
-            selected_table,
-            current_db
-        )
+questions = [
+    f"Show all records from {selected_table}.",
+    f"Count total records in {selected_table}.",
+]
+
+# Add suggestions based on column names
+for column in columns:
+
+    col = column.lower()
+
+    if "name" in col:
+        questions.append(f"Show only the {column} column.")
+
+    if "department" in col or "category" in col:
+        questions.append(f"Group records by {column}.")
+
+    if "salary" in col or "amount" in col or "price" in col:
+        questions.append(f"Show records where {column} is greater than 50000.")
+        questions.append(f"Find the average {column}.")
+
+    if "age" in col:
+        questions.append(f"Show records where {column} is greater than 30.")
+
+# Remove duplicate questions
+questions = list(dict.fromkeys(questions))
+
+# Display first 6 suggestions
+for question in questions[:6]:
+    st.info(question)
+
+st.write("### 👀 Dataset Preview")
+
+preview = preview_table(
+    selected_table,
+    current_db
+)
 
         st.dataframe(
             preview,
