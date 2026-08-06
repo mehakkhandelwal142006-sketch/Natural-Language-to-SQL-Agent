@@ -196,3 +196,17 @@ def validate_sql(sql):
     ]
 
     return any(sql.startswith(keyword) for keyword in valid_keywords)
+
+def get_tables(db_path=None):
+    """
+    Returns list of tables from the selected database.
+    """
+
+    engine = get_engine(db_path)
+
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT name FROM sqlite_master WHERE type='table';")
+        )
+
+        return [row[0] for row in result]
