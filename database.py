@@ -141,6 +141,9 @@ def load_custom_file_to_sqlite(uploaded_file, target_db="data/uploaded.db"):
     if db_dir:
         os.makedirs(db_dir, exist_ok=True)
 
+    # Ensure data directory exists
+    os.makedirs(os.path.dirname(target_db), exist_ok=True)
+
     file_name = uploaded_file.name
     ext = os.path.splitext(file_name)[1].lower()
 
