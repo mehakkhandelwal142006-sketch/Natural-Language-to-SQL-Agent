@@ -167,6 +167,9 @@ def load_custom_file_to_sqlite(uploaded_file, target_db="data/uploaded.db"):
         uploaded_file.seek(0)
 
         df = pd.read_csv(uploaded_file)
+        print("CSV Loaded Successfully")
+        print(df.head())
+        print(df.shape)
 
         table_name = clean_table_name(file_name)
 
