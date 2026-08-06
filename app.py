@@ -160,25 +160,33 @@ with st.sidebar:
 
     if uploaded_file is not None:
 
-        if st.session_state.uploaded_file_name != uploaded_file.name:
+    # Process only when a new file is uploaded
+    if st.session_state.uploaded_file_name != uploaded_file.name:
 
-            try:
+        try:
 
-                target_db = "data/uploaded.db"
+            target_db = "data/uploaded.db"
 
-                message = load_custom_file_to_sqlite(
-                    uploaded_file,
-                    target_db
-                )
+            msg = load_custom_file_to_sqlite(
+                uploaded_file,
+                target_db=target_db
+            )
 
-                st.session_state.active_db = target_db
-                st.session_state.uploaded_file_name = uploaded_file.name
+            st.session_state.active_db = target_db
+            st.session_state.uploaded_file_name = uploaded_file.name
 
-                st.success(message)
+            # Reset previous table selection
+            for key in ["table_preview", "selected_table"]:
+                if key in st.session_state:
+                    del st.session_state[key]
 
-            except Exception as e:
+            st.success(f"✅ {msg}")
 
-                st.error(f"❌ {e}")
+            # Refresh the application
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"Failed to process file: {e}")
 
     st.markdown("---")
 
