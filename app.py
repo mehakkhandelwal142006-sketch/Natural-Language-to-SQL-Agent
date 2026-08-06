@@ -172,35 +172,68 @@ with st.sidebar:
 # Welcome Section
 # ===========================================================
 # ===========================================================
-# Dataset Preview
+# Database Preview
 # ===========================================================
 
-active_db = st.session_state.active_db
+# Determine which database is active
+if st.session_state.active_db:
+    current_db = st.session_state.active_db
+    database_name = st.session_state.uploaded_file_name
+else:
+    current_db = None  # Uses default company.db
+    database_name = "Default Company Database"
 
-if active_db:
+st.subheader("📊 Database Explorer")
 
-    tables = get_tables(active_db)
+st.success(f"Currently Using: {database_name}")
+
+try:
+    tables = get_tables(current_db)
 
     if tables:
 
-        st.subheader("📊 Dataset Preview")
-
-        preview_selected = st.selectbox(
-            "Select Table to Preview",
-            tables
+        selected_preview_table = st.selectbox(
+            "📋 Select Table",
+            tables,
+            key="preview_table_selector"
         )
 
+        rows, columns = table_info(
+            selected_preview_table,
+            current_db
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric("Rows", rows)
+
+        with col2:
+            st.metric("Columns", len(columns))
+
+        st.write("### 🏷 Available Columns")
+
+        st.write(", ".join(columns))
+
+        st.write("### 👀 Data Preview")
+
         preview_df = preview_table(
-            preview_selected,
-            active_db
+            selected_preview_table,
+            current_db
         )
 
         st.dataframe(
             preview_df,
-            use_container_width=True
+            use_container_width=True,
+            height=350
         )
 
         st.caption("Showing first 100 rows")
+
+except Exception as e:
+    st.warning(f"Unable to preview database: {e}")
+
+st.markdown("---")
 if len(st.session_state.messages) == 0:
     st.info(WELCOME_MESSAGE)
 
