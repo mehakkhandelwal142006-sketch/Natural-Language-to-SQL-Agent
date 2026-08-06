@@ -137,101 +137,109 @@ with st.sidebar:
     st.markdown("---")
 
     # -------------------------------------------------------
-# Upload Dataset
-# -------------------------------------------------------
+    # Upload Dataset
+    # -------------------------------------------------------
 
-st.subheader("📂 Upload Dataset")
+    st.subheader("📂 Upload Dataset")
 
-st.caption(
-    "Upload a CSV, Excel, or SQLite database to query your own data."
-)
+    st.caption(
+        "Upload a CSV, Excel, or SQLite database to query your own data."
+    )
 
-uploaded_file = st.file_uploader(
-    "Choose File",
-    type=[
-        "csv",
-        "xlsx",
-        "xls",
-        "db",
-        "sqlite",
-        "sqlite3"
-    ]
-)
+    uploaded_file = st.file_uploader(
+        "Choose File",
+        type=[
+            "csv",
+            "xlsx",
+            "xls",
+            "db",
+            "sqlite",
+            "sqlite3"
+        ],
+        key="dataset_uploader"
+    )
 
-if uploaded_file is not None:
+    # Only (re)process the file when it's actually a NEW upload.
+    # Without this guard, st.file_uploader keeps returning the same
+    # file on every rerun (including ones triggered elsewhere in the
+    # app), so this block would reprocess the file and call st.rerun()
+    # forever, making the "active" database flip back and forth.
+    if uploaded_file is not None and (
+        uploaded_file.name != st.session_state.uploaded_file_name
+    ):
 
-    try:
+        try:
 
-        target_db = "data/uploaded.db"
+            target_db = "data/uploaded.db"
 
-        msg = load_custom_file_to_sqlite(
-            uploaded_file,
-            target_db=target_db
+            msg = load_custom_file_to_sqlite(
+                uploaded_file,
+                target_db=target_db
+            )
+
+            st.session_state.active_db = target_db
+            st.session_state.uploaded_file_name = uploaded_file.name
+
+            # Reset explorer
+            for key in [
+                "selected_table",
+                "table_preview",
+                "suggested_questions"
+            ]:
+                if key in st.session_state:
+                    del st.session_state[key]
+
+            st.success(f"✅ {msg}")
+
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"Failed to process file: {e}")
+
+    st.markdown("---")
+
+    # -------------------------------------------------------
+    # Active Database
+    # -------------------------------------------------------
+
+    st.subheader("📊 Current Database")
+
+    if st.session_state.active_db:
+
+        st.success(
+            f"Using: {st.session_state.uploaded_file_name}"
         )
 
-        st.session_state.active_db = target_db
-        st.session_state.uploaded_file_name = uploaded_file.name
+    else:
 
-        # Reset explorer
-        for key in [
-            "selected_table",
-            "table_preview",
-            "suggested_questions"
-        ]:
+        st.info("Using: Default Company Database")
+
+    # -------------------------------------------------------
+    # Reset Database
+    # -------------------------------------------------------
+
+    if st.button("🔄 Reset to Default Database"):
+
+        st.session_state.active_db = None
+        st.session_state.uploaded_file_name = None
+
+        # Clear previous selections
+        for key in ["table_preview", "selected_table"]:
             if key in st.session_state:
                 del st.session_state[key]
 
-        st.success(f"✅ {msg}")
-
         st.rerun()
 
-    except Exception as e:
-        st.error(f"Failed to process file: {e}")
-
-st.markdown("---")
-
-# -------------------------------------------------------
-# Active Database
-# -------------------------------------------------------
-
-st.subheader("📊 Current Database")
-
-if st.session_state.active_db:
-
-    st.success(
-        f"Using: {st.session_state.uploaded_file_name}"
-    )
-
-else:
-
-    st.info("Using: Default Company Database")
+    st.markdown("---")
 
     # -------------------------------------------------------
-# Reset Database
-# -------------------------------------------------------
+    # About
+    # -------------------------------------------------------
 
-if st.button("🔄 Reset to Default Database"):
+    with st.expander("ℹ️ About This Project"):
 
-    st.session_state.active_db = None
-    st.session_state.uploaded_file_name = None
-
-    # Clear previous selections
-    for key in ["table_preview", "selected_table"]:
-        if key in st.session_state:
-            del st.session_state[key]
-
-    st.rerun()
-
-st.markdown("---")
-
-# -------------------------------------------------------
-# About
-# -------------------------------------------------------
-
-with st.expander("ℹ️ About This Project"):
-
-    st.write(
-        """
+        st.write(
+            """
 This application converts natural language into SQL queries
 using Google's Gemini AI.
 
@@ -249,17 +257,17 @@ using Google's Gemini AI.
 - Database Explorer
 - Download Results as CSV
 """
-    )
+        )
 
-st.markdown("---")
+    st.markdown("---")
 
-# -------------------------------------------------------
-# Sample Questions
-# -------------------------------------------------------
+    # -------------------------------------------------------
+    # Sample Questions
+    # -------------------------------------------------------
 
-with st.expander("💡 Example Questions"):
+    with st.expander("💡 Example Questions"):
 
-    st.markdown("""
+        st.markdown("""
 - Show all employees
 - Count total employees
 - Show employees earning more than 50000
@@ -795,9 +803,3 @@ div.stDownloadButton>button{
 """,
 unsafe_allow_html=True
 )
-
-
-
-
-
-
