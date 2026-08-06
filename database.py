@@ -113,26 +113,12 @@ def execute_query(sql, db_path=None):
         conn.close()
 
 
-# ===========================================================
-# Load Custom File (CSV, Excel, SQLite) into SQLite DB
-# ===========================================================
-
-def clean_table_name(filename):
-    """
-    Converts filename to a valid SQL table name.
-    e.g., 'My Sales Data (2024).csv' -> 'my_sales_data_2024'
-    """
-    name = os.path.splitext(filename)[0]
-    name = re.sub(r'[^a-zA-Z0-9_]', '_', name)
-    name = re.sub(r'_+', '_', name).strip('_').lower()
-    return name or "uploaded_table"
-
-
 def load_custom_file_to_sqlite(uploaded_file, target_db="data/uploaded.db"):
     """
-    Reads CSV, Excel, or SQLite files uploaded by the user and loads them into target_db.
-    Returns details about the created database/tables.
+    Reads CSV, Excel, or SQLite files uploaded by the user
+    and loads them into target_db.
     """
+
     db_dir = os.path.dirname(target_db)
     if db_dir:
         os.makedirs(db_dir, exist_ok=True)
@@ -140,39 +126,96 @@ def load_custom_file_to_sqlite(uploaded_file, target_db="data/uploaded.db"):
     file_name = uploaded_file.name
     ext = os.path.splitext(file_name)[1].lower()
 
+    # Always delete previous uploaded database
+    if os.path.exists(target_db):
+        os.remove(target_db)
+
+    # ==========================================================
+    # SQLite Database Upload
+    # ==========================================================
     if ext in [".db", ".sqlite", ".sqlite3"]:
-        # Save uploaded SQLite file directly
+
         with open(target_db, "wb") as f:
             f.write(uploaded_file.getbuffer())
+
         return f"Successfully loaded SQLite database: {file_name}"
 
+    # ==========================================================
+    # CSV Upload
+    # ==========================================================
     elif ext == ".csv":
+
+        uploaded_file.seek(0)
+
         df = pd.read_csv(uploaded_file)
+
         table_name = clean_table_name(file_name)
 
         conn = sqlite3.connect(target_db)
-        df.to_sql(table_name, conn, if_exists="replace", index=False)
+
+        df.to_sql(
+            table_name,
+            conn,
+            if_exists="replace",
+            index=False
+        )
+
         conn.close()
 
-        return f"Successfully created table '{table_name}' ({len(df)} rows) from {file_name}"
+        return (
+            f"Successfully created table "
+            f"'{table_name}' ({len(df)} rows) "
+            f"from {file_name}"
+        )
 
+    # ==========================================================
+    # Excel Upload
+    # ==========================================================
     elif ext in [".xlsx", ".xls"]:
+
+        uploaded_file.seek(0)
+
         excel_file = pd.ExcelFile(uploaded_file)
+
         conn = sqlite3.connect(target_db)
+
         created_tables = []
 
         for sheet_name in excel_file.sheet_names:
-            df = pd.read_excel(excel_file, sheet_name=sheet_name)
-            table_name = clean_table_name(f"{file_name}_{sheet_name}")
-            df.to_sql(table_name, conn, if_exists="replace", index=False)
+
+            df = pd.read_excel(
+                excel_file,
+                sheet_name=sheet_name
+            )
+
+            table_name = clean_table_name(
+                f"{file_name}_{sheet_name}"
+            )
+
+            df.to_sql(
+                table_name,
+                conn,
+                if_exists="replace",
+                index=False
+            )
+
             created_tables.append(table_name)
 
         conn.close()
-        return f"Successfully created tables: {', '.join(created_tables)} from {file_name}"
 
+        return (
+            f"Successfully created tables: "
+            f"{', '.join(created_tables)} "
+            f"from {file_name}"
+        )
+
+    # ==========================================================
+    # Unsupported File
+    # ==========================================================
     else:
-        raise ValueError("Unsupported file format. Please upload a CSV, Excel, or SQLite file.")
-
+        raise ValueError(
+            "Unsupported file format. Please upload a CSV, Excel, or SQLite file."
+        )
 
 # ===========================================================
 # Validate SQL
