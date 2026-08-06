@@ -221,4 +221,22 @@ def preview_table(table_name, db_path=None, limit=100):
     query = f"SELECT * FROM {table_name} LIMIT {limit}"
 
     return pd.read_sql(query, engine)
+    
+def table_info(table_name, db_path=None):
+    """
+    Returns row count and column names.
+    """
 
+    engine = get_engine(db_path)
+
+    rows = pd.read_sql(
+        f"SELECT COUNT(*) as total FROM {table_name}",
+        engine
+    ).iloc[0]["total"]
+
+    columns = pd.read_sql(
+        f"PRAGMA table_info({table_name})",
+        engine
+    )["name"].tolist()
+
+    return rows, columns
